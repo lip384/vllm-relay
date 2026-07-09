@@ -1,0 +1,6 @@
+.git_old/
+.vscode/
+.env
+.env.client
+.env.server
+node_modules/

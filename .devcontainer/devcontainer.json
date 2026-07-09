@@ -1,0 +1,23 @@
+{
+  "name": "vllm-relay-devcontainer",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "forwardPorts": [
+    3000
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "openai relay server"
+    }
+  },
+  "runArgs": [
+    //"--pull=newer",
+    //"--network=host",
+    "--add-host=wsl.localdomain:host-gateway",
+    "--env-file=${localWorkspaceFolder}/.env"
+  ],
+  "remoteUser": "ubuntu",
+  "postCreateCommand": "npm install"
+}

@@ -1,0 +1,36 @@
+# dev
+use dev container with the docker image there
+
+# prod
+build docker image
+```bash
+podman build -t vllm-relay .
+```
+
+Create local environment files:
+```bash
+cp .env.client.example .env.client
+cp .env.server.example .env.server
+```
+
+Keep `.env.client.example` and `.env.server.example` committed as templates, and keep your real `.env.client` and `.env.server` local and uncommitted.
+
+Run client-side docker image to get a local openai endpoint. Traffic is relayed to private remote endpoint.
+```bash
+podman run --rm \
+    --name vllm-relay-client-side \
+    -d \
+    -p 3000:3000 \
+    --env-file .env.client \
+    vllm-relay
+```
+
+Run server-side docker image that connects to Azure Relay and makes a local openai endpoint accessible for authenticated Azure Relay clients. 
+```bash
+podman run --rm \
+    --name vllm-relay-server-side \
+    -d \
+    --env-file .env.server \
+    vllm-relay \
+    server-side-proxy.js
+```

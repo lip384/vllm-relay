@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "axios": "^1.18.1",
+    "hyco-https": "^1.4.5"
+  }
+}
