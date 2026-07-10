@@ -7,14 +7,6 @@ build docker image
 podman build -t vllm-relay .
 ```
 
-Create local environment files:
-```bash
-cp .env.client.example .env.client
-cp .env.server.example .env.server
-```
-
-Keep `.env.client.example` and `.env.server.example` committed as templates, and keep your real `.env.client` and `.env.server` local and uncommitted.
-
 Run client-side docker image to get a local openai endpoint. Traffic is relayed to private remote endpoint.
 ```bash
 podman run --rm \

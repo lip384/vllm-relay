@@ -1,3 +1,5 @@
+// TODO: don't log tokens
+
 const hyco = require('hyco-https');
 const http = require('http');
 const https = require('https');
