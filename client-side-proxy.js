@@ -5,8 +5,8 @@ const hyco = require('hyco-https');
 // Relay configuration
 const RELAY_NAMESPACE = process.env.RELAY_NAMESPACE;
 const HYBRID_CONNECTION_NAME = process.env.HYBRID_CONNECTION_NAME;
-const SAS_KEY_NAME = process.env.SAS_KEY_NAME;
-const SAS_KEY = process.env.SAS_KEY;
+const CLIENT_SAS_KEY_NAME = process.env.CLIENT_SAS_KEY_NAME;
+const CLIENT_SAS_KEY = process.env.CLIENT_SAS_KEY;
 
 // Build Relay URI + token
 const relayUri = hyco.createRelayHttpsUri(
@@ -17,8 +17,8 @@ const relayUri = hyco.createRelayHttpsUri(
 const relayToken = () =>
   hyco.createRelayToken(
     relayUri,
-    SAS_KEY_NAME,
-    SAS_KEY
+    CLIENT_SAS_KEY_NAME,
+    CLIENT_SAS_KEY
   );
 
 console.log('Relay URI:', relayUri);

@@ -5,25 +5,14 @@ const https = require('https');
 
 var args = {
     ns: process.env.RELAY_NAMESPACE,
-    path: process.env.HYBRID_CONNECTION_NAME,
-    keyrule: process.env.SAS_KEY_NAME,
-    key: process.env.SAS_KEY,
+    hybrid_connection_name: process.env.HYBRID_CONNECTION_NAME,
+    path: "/" +process.env.HYBRID_CONNECTION_NAME,
+    keyrule: process.env.SERVER_SAS_KEY_NAME,
+    key: process.env.SERVER_SAS_KEY,
+    client_keyrule: process.env.CLIENT_SAS_KEY_NAME,
+    client_key: process.env.CLIENT_SAS_KEY,
     target_url: process.env.TARGET_URL
 };
-
-/* Parse command line options */
-var pattern = /^--(.*?)(?:=(.*))?$/;
-process.argv.forEach(function (value) {
-    var match = pattern.exec(value);
-    if (match) {
-        args[match[1]] = match[2] ? match[2] : true;
-    }
-});
-
-if (!args.ns || !args.path || !args.keyrule || !args.key || !args.target_url) {
-    console.log('server-side-proxy.js --ns=[namespace] --path=[path] --keyrule=[keyrule] --key=[key] --target_url=[target_url]');
-    process.exit(1);
-}
 
 function sanitizeRequestHeaders(headers, targetHost) {
     const blocked = new Set([
@@ -125,42 +114,102 @@ function forwardStreaming(req, res, targetUrl) {
 /**
  * HYBRID CONNECTION SERVER
  */
-const uri = hyco.createRelayListenUri(args.ns, args.path);
-const token = hyco.createRelayToken(uri, args.keyrule, args.key);
+const uri = hyco.createRelayListenUri(args.ns, args.hybrid_connection_name);
+var server = null;
+function initServer() {
+    server = hyco.createRelayedServer(
+        { 
+            server: uri, 
+            token: () => hyco.createRelayToken(uri, args.keyrule, args.key) 
+        },
+        (req, res) => {
+            try {
+                if (req.url.startsWith(args.path +"/healthCheck")) {
+                    res.writeHead(200, { "Content-Type": "text/plain" });
+                    res.end("OK");
+                }
+                else if (req.url.startsWith(args.path +"/v1")) {
+                    console.log("Incoming request:", req.method, req.url);
 
-const server = hyco.createRelayedServer(
-    { server: uri, token: token },
-    async (req, res) => {
-        try {
-            console.log("Incoming request:", req.method, req.url);
+                    // Remove your prefix
+                    const rewrittenUrl = args.target_url + req.url.substring(args.path.length);
 
-            // Remove your prefix
-            const rewrittenUrl = args.target_url + req.url.substring("/pr1dqvllm1".length);
+                    console.log("→ Forwarding to:", rewrittenUrl);
 
-            console.log("→ Forwarding to:", rewrittenUrl);
+                    forwardStreaming(req, res, rewrittenUrl);
+                } else {
+                    console.error("Incoming request with invalid path:", req.method, req.url);
+                    res.writeHead(404, { "Content-Type": "text/plain" });
+                    res.end("Not found");
+                }
+            } catch (err) {
+                console.error("Error:", err);
 
-            forwardStreaming(req, res, rewrittenUrl);
-        } catch (err) {
-            console.error("Error:", err);
-            res.writeHead(502, { "Content-Type": "text/plain" });
-            res.end("Bad gateway");
+                res.writeHead(502, { "Content-Type": "text/plain" });
+                res.end("Bad gateway");
+
+                console.log("Attempt recovery.", err.message);
+            }
         }
-    }
-);
+    );
 
-server.listen(err => {
-    if (err) {
-        console.log("Server error:", err);
-        return;
-    }
-    console.log("Hybrid Connection streaming relay is running");
-});
+    server.listen(err => {
+        if (err) {
+            console.log("Server error:", err);
+            return;
+        }
+        console.log("Hybrid Connection streaming relay is running");
+    });
 
-server.on("error", err => {
-    console.log("Relay error:", err);
-});
+    server.on("error", err => {
+        console.log("Relay error:", err);
+    });
+
+    // server.on("close", () => {
+    //     console.log("Relay server closed");
+    //     process.exit(1);
+    // });
+}
+
+initServer();
+
 
 let shuttingDown = false;
+const pingIntervalMs = Number(process.env.PING_INTERVAL_MS || 5000);
+const pingTimer = setInterval(() => {
+
+    https.get({
+        hostname : args.ns,
+        path : args.path +"/healthCheck",
+        port : 443,
+        headers : {
+            'ServiceBusAuthorization' : 
+               https.createRelayToken(https.createRelayHttpsUri(args.ns, args.hybrid_connection_name), args.client_keyrule, args.client_key)
+        }
+    }, (res) => {
+        let error;
+        if (res.statusCode !== 200) {
+            console.error('Request Failed.\n Status Code:' + res.statusCode);
+            try {
+                server.close();
+            } catch (err) {
+                console.error("Error while closing relay server:", err);
+            }
+            initServer();
+            res.resume();
+        } 
+        else {
+            console.log('Listener healthy.')
+        };
+    }).on('error', (e) => {
+        console.error(`Got error: ${e.message}`);
+    });
+
+    console.log(`[ping] ${new Date().toISOString()} relay alive`);
+}, pingIntervalMs);
+
+// Do not keep the process alive only for heartbeat logs.
+pingTimer.unref();
 
 function shutdown(signal) {
     if (shuttingDown) {
@@ -169,6 +218,8 @@ function shutdown(signal) {
     shuttingDown = true;
 
     console.log(`Received ${signal}. Shutting down gracefully...`);
+
+    clearInterval(pingTimer);
 
     server.close(err => {
         if (err) {
