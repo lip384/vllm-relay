@@ -1,10 +1,14 @@
-# dev
-use dev container with the docker image there
-
-# prod
+# Build the image
 build docker image
 ```bash
 podman build -t vllm-relay .
+```
+
+# Publish the image (optional)
+With example docker registry:
+```bash
+podman tag vllm-relay containerregistryogw302.azurecr.io/vllm-relay
+podman push containerregistryogw302.azurecr.io/vllm-relay
 ```
 
 Run client-side docker image to get a local openai endpoint. Traffic is relayed to private remote endpoint.
