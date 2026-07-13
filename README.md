@@ -24,6 +24,7 @@ Run server-side docker image that connects to Azure Relay and makes a local open
 ```bash
 podman run --rm \
     --name vllm-relay-server-side \
+    --network=vllmnet \
     --env-file .env \
     vllm-relay \
     server-side-proxy.js

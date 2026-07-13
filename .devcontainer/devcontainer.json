@@ -14,8 +14,7 @@
   },
   "runArgs": [
     //"--pull=newer",
-    "--network=host",
-    "--add-host=host.docker.internal:host-gateway",
+    "--network=vllmnet",
     "--env-file=${localWorkspaceFolder}/.env"
   ],
   "remoteUser": "ubuntu",
