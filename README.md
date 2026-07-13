@@ -16,8 +16,8 @@ docker push containerregistryogw302.azurecr.io/vllm-relay
 # Publish the image (optional)
 With example docker registry:
 ```bash
-podman tag vllm-relay containerregistryogw302.azurecr.io/vllm-relay
-podman push containerregistryogw302.azurecr.io/vllm-relay
+docker tag vllm-relay containerregistryogw302.azurecr.io/vllm-relay
+docker push containerregistryogw302.azurecr.io/vllm-relay
 ```
 
 Run client-side docker image to get a local openai endpoint. Traffic is relayed to private remote endpoint.
