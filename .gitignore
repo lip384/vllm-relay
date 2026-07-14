@@ -1,3 +1,4 @@
+.devcontainer/devcontainer.json
 .git_old/
 .vscode/
 .env
