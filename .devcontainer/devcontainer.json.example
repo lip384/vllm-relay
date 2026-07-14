@@ -13,17 +13,10 @@
     }
   },
   "runArgs": [
-    //"--pull=newer",
     "--network=host",
     "--add-host=host.docker.internal:host-gateway",
     "--env-file=${localWorkspaceFolder}/.env"
   ],
-  // "runArgs": [
-  //   //"--pull=newer",
-  //   "--network=vllmnet",
-  //   "--add-host=wsl.localdomain:host-gateway",
-  //   "--env-file=${localWorkspaceFolder}/.env"
-  // ],
   "remoteUser": "ubuntu",
   "postCreateCommand": "npm install"
 }
